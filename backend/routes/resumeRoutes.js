@@ -3,6 +3,7 @@ const multer = require("multer");
 const extractTextFromPDF = require("../utils/pdfParser");
 const extractSkills = require("../utils/skillExtractor");
 const calculateATSScore = require("../utils/atsScorer");
+const matchJobDescription = require("../utils/jobMatcher");
 const { parseResume } = require("../controllers/resumeController");
 
 const router = express.Router();
@@ -53,11 +54,20 @@ router.post("/upload", upload.single("resume"), async (req, res) => {
     const filePath = req.file.path;
     const extractedText = await extractTextFromPDF(filePath);
 
-    // Extract skills
+    // Extract skills from resume
     const skills = extractSkills(extractedText);
 
     // Calculate ATS Score
     const atsScore = calculateATSScore(skills);
+
+    // Get Job Description from Postman form-data
+    const jobDescription = req.body.jobDescription || "";
+
+    // Match Resume Skills with JD
+    const jobMatch = matchJobDescription(
+      skills,
+      jobDescription
+    );
 
     return res.json({
       success: true,
@@ -66,6 +76,8 @@ router.post("/upload", upload.single("resume"), async (req, res) => {
       atsScore,
 
       skills,
+
+      jobMatch,
 
       file: {
         originalname: req.file.originalname,
