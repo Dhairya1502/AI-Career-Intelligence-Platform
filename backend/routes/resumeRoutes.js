@@ -4,7 +4,11 @@ const extractTextFromPDF = require("../utils/pdfParser");
 const extractSkills = require("../utils/skillExtractor");
 const calculateATSScore = require("../utils/atsScorer");
 const matchJobDescription = require("../utils/jobMatcher");
+const matchCareers = require("../utils/careerMatcher");
 const { parseResume } = require("../controllers/resumeController");
+const recommendCertifications = require("../utils/certificationRecommender");
+const generateLearningPath = require("../utils/learningPathGenerator");
+const analyzeSkillGap = require("../utils/skillGapAnalyzer");
 
 const router = express.Router();
 
@@ -68,25 +72,55 @@ router.post("/upload", upload.single("resume"), async (req, res) => {
       skills,
       jobDescription
     );
+    // Career Recommendations
+    // Career Recommendations
+const careerMatches = matchCareers(skills);
+
+// Best Career Match
+const recommendedCareer =
+  careerMatches.length > 0 ? careerMatches[0] : null;
+
+// Certifications
+const certifications = recommendedCareer
+  ? recommendCertifications(recommendedCareer.career)
+  : [];
+
+// Learning Path
+const learningPath = recommendedCareer
+  ? generateLearningPath(recommendedCareer.career)
+  : [];
+const skillGapAnalysis = recommendedCareer
+  ? analyzeSkillGap(recommendedCareer)
+  : null;
 
     return res.json({
-      success: true,
-      message: "Resume uploaded and analyzed successfully",
+  success: true,
+  message: "Resume uploaded and analyzed successfully",
 
-      atsScore,
+  atsScore,
 
-      skills,
+  skills,
 
-      jobMatch,
+  jobMatch,
 
-      file: {
-        originalname: req.file.originalname,
-        filename: req.file.filename,
-        size: req.file.size,
-      },
+  careerMatches,
 
-      extractedText: extractedText.slice(0, 1000),
-    });
+  recommendedCareer,
+
+  certifications,
+
+  learningPath,
+
+  skillGapAnalysis,
+
+  file: {
+    originalname: req.file.originalname,
+    filename: req.file.filename,
+    size: req.file.size,
+  },
+
+  extractedText: extractedText.slice(0, 1000),
+});
   } catch (error) {
     console.log("ERROR:", error);
 
